@@ -40,7 +40,6 @@ public class CustomerRepository {
     public List<Customer> findByExample(Customer searchModel) {
         Map<String, Object> params = paramsMap(searchModel);
         List<String> predicates = Lists.newArrayList();
-        String optionalJoin = "";
         if (params.get("customerId") != null) {
             predicates.add("CUSTOMER_ID = :customerId");
         }
@@ -54,11 +53,10 @@ public class CustomerRepository {
             predicates.add("SURNAME = :surname");
         }
         if (params.get("accountIds") != null) {
-            optionalJoin = " INNER JOIN CUSTOMER_ACCOUNT ca ON c.CUSTOMER_ID = ca.CUSTOMER_ID";
-            predicates.add("ca.ACCOUNT_ID IN (:accountIds)");
+            predicates.add("EXISTS (SELECT 1 FROM CUSTOMER_ACCOUNT ca WHERE c.CUSTOMER_ID = ca.CUSTOMER_ID AND ca.ACCOUNT_ID IN (:accountIds))");
         }
 
-        String sql = SELECT_SQL + optionalJoin + " WHERE " + Joiner.on(" AND ").join(predicates);
+        String sql = SELECT_SQL + " WHERE " + Joiner.on(" AND ").join(predicates);
         return jdbcTemplate.query(sql, params, ROW_MAPPER);
     }
 

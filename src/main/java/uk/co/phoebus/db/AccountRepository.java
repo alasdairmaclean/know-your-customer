@@ -39,7 +39,6 @@ public class AccountRepository {
     public List<Account> findByExample(Account searchModel) {
         Map<String, Object> params = paramsMap(searchModel);
         List<String> predicates = Lists.newArrayList();
-        String optionalJoin = "";
         if (params.get("accountId") != null) {
             predicates.add("ACCOUNT_ID = :accountId");
         }
@@ -47,11 +46,10 @@ public class AccountRepository {
             predicates.add("ACCOUNT_NUMBER = :accountNumber");
         }
         if (params.get("customerIds") != null) {
-            optionalJoin = " INNER JOIN CUSTOMER_ACCOUNT ca ON a.ACCOUNT_ID = ca.ACCOUNT_ID";
-            predicates.add("ca.CUSTOMER_ID IN (:customerIds)");
+            predicates.add("EXISTS (SELECT 1 FROM CUSTOMER_ACCOUNT ca WHERE a.ACCOUNT_ID = ca.ACCOUNT_ID AND ca.CUSTOMER_ID IN (:customerIds))");
         }
 
-        String sql = SELECT_SQL + optionalJoin + " WHERE " + Joiner.on(" AND ").join(predicates);
+        String sql = SELECT_SQL + " WHERE " + Joiner.on(" AND ").join(predicates);
         return jdbcTemplate.query(sql, params, ROW_MAPPER);
     }
 
